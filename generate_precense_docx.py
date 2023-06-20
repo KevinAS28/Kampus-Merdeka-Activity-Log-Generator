@@ -1,5 +1,5 @@
 # %%
-import os, json, subprocess, json
+import os, json, subprocess, json, requests
 from dotenv import dotenv_values
 
 config = dotenv_values('config.env')
@@ -9,17 +9,22 @@ print(config)
 # %%
 
 
-credential = json.loads(subprocess.check_output('''curl 'https://api.kampusmerdeka.kemdikbud.go.id/user/auth/login/mbkm' \
-  -H 'sec-ch-ua: "Not.A/Brand";v="8", "Chromium";v="114", "Google Chrome";v="114"' \
-  -H 'Accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -H 'Referer: https://kampusmerdeka.kemdikbud.go.id/' \
-  -H 'sec-ch-ua-mobile: ?0' \
-  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36' \
-  -H 'sec-ch-ua-platform: "Windows"' \
-  --data-raw '{"email":"%s","password":"%s"}' \
-  --compressed'''%(config['EMAIL'], config['PASSWORD']), shell=True).decode('utf-8'))
+headers = {
+    'sec-ch-ua': '"Not.A/Brand";v="8", "Chromium";v="114", "Google Chrome";v="114"',
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+    'Referer': 'https://kampusmerdeka.kemdikbud.go.id/',
+    'sec-ch-ua-mobile': '?0',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+    'sec-ch-ua-platform': '"Windows"',
+}
 
+json_data = {
+    'email': config['EMAIL'],
+    'password': config['PASSWORD'],
+}
+
+credential = json.loads(requests.post('https://api.kampusmerdeka.kemdikbud.go.id/user/auth/login/mbkm', headers=headers, json=json_data).text)
 print(credential)
 
 
@@ -27,22 +32,28 @@ print(credential)
 week_data = dict()
 
 for i in range(1, int(config['WEEK_COUNT'])+1):
+  headers = {
+      'authority': 'api.kampusmerdeka.kemdikbud.go.id',
+      'accept': '*/*',
+      'accept-language': 'en-US,en;q=0.9',
+      'authorization': 'Bearer '+credential['data']['access_token'],
+      'origin': 'https://kampusmerdeka.kemdikbud.go.id',
+      'referer': 'https://kampusmerdeka.kemdikbud.go.id/',
+      'sec-ch-ua': '"Google Chrome";v="111", "Not(A:Brand";v="8", "Chromium";v="111"',
+      'sec-ch-ua-mobile': '?0',
+      'sec-ch-ua-platform': '"Windows"',
+      'sec-fetch-dest': 'empty',
+      'sec-fetch-mode': 'cors',
+      'sec-fetch-site': 'same-site',
+      'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
+  }
 
-  data = json.loads(subprocess.check_output(f"""curl 'https://api.kampusmerdeka.kemdikbud.go.id/magang/report/perweek/{config["ACTIVITY_ID"]}/{i}' \
-    -H 'authority: api.kampusmerdeka.kemdikbud.go.id' \
-    -H 'accept: */*' \
-    -H 'accept-language: en-US,en;q=0.9' \
-    -H 'authorization: Bearer {credential['data']['access_token']}' \
-    -H 'origin: https://kampusmerdeka.kemdikbud.go.id' \
-    -H 'referer: https://kampusmerdeka.kemdikbud.go.id/' \
-    -H 'sec-ch-ua: "Google Chrome";v="111", "Not(A:Brand";v="8", "Chromium";v="111"' \
-    -H 'sec-ch-ua-mobile: ?0' \
-    -H 'sec-ch-ua-platform: "Windows"' \
-    -H 'sec-fetch-dest: empty' \
-    -H 'sec-fetch-mode: cors' \
-    -H 'sec-fetch-site: same-site' \
-    -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36' \
-    --compressed""", shell=True).decode('utf-8'))
+  response = requests.get(
+      f'https://api.kampusmerdeka.kemdikbud.go.id/magang/report/perweek/{config["ACTIVITY_ID"]}/{i}',
+      headers=headers,
+  )
+
+  data = json.loads(response.text)
 
   week_data[i] = data
 
