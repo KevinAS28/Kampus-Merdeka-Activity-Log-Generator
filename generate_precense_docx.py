@@ -68,9 +68,12 @@ import docx
 
 OUTPUT = f'presences_{config["ACTIVITY_ID"]}.docx'
 
-if os.path.isfile(OUTPUT):
-    os.remove(OUTPUT)
-
+try:
+  if os.path.isfile(OUTPUT):
+      os.remove(OUTPUT)
+except PermissionError:
+   print(f'File {OUTPUT} sedang dipakai atau script ini tidak memiliki akses write')
+   exit(1)
 
 document: docx.Document = docx.Document()
 
@@ -79,28 +82,24 @@ table = document.add_table(rows=1, cols=3)
 table.style = 'Table Grid'
 
 for week, week_report in week_data.items():
-    for day_index, daily_report in enumerate(week_report['data']['daily_report']):
-        row_cells = table.add_row().cells
-        row_data = [
-            f'{week}/{datetime.strptime(daily_report["report_date"], "%Y-%m-%dT%H:%M:%SZ").date()}',
-            daily_report['report'],
-            # None, #image
-            '' if day_index<(len(week_report['data']['daily_report'])-1) else week_report['data']['learned_weekly'],
-            # None #image
-        ]
+    try:
+      for day_index, daily_report in enumerate(week_report['data']['daily_report']):
+          row_cells = table.add_row().cells
+          row_data = [
+              f'{week}/{datetime.strptime(daily_report["report_date"], "%Y-%m-%dT%H:%M:%SZ").date()}',
+              daily_report['report'],
+              # None, #image
+              '' if day_index<(len(week_report['data']['daily_report'])-1) else week_report['data']['learned_weekly'],
+              # None #image
+          ]
 
-        for i, cell in enumerate(row_data):
-            if cell is None:
-                continue
-            row_cells[i].text = str(cell)    
+          for i, cell in enumerate(row_data):
+              if cell is None:
+                  continue
+              row_cells[i].text = str(cell)    
+    except KeyError:
+       print(f'Week {week} data cannot be read')
 
-        # paragraph = row_cells[3].paragraphs[0]
-        # run = paragraph.add_run()
-        # run.add_picture('kevin.png', width = 1400000, height = 1400000)
-
-        # paragraph = row_cells[5].paragraphs[0]
-        # run = paragraph.add_run()
-        # run.add_picture('kak pam.png', width = 1400000, height = 1400000)        
 
 document.save(OUTPUT)
 
