@@ -4,7 +4,6 @@ from dotenv import dotenv_values
 
 config = dotenv_values('config.env')
 
-print(config)
 
 # %%
 
@@ -77,6 +76,7 @@ except PermissionError:
 
 document: docx.Document = docx.Document()
 
+WEEKDAYS = 'Senin Selasa Rabu Kamis Jumat Sabtu Minggu'.split(' ')
 
 table = document.add_table(rows=1, cols=3)
 table.style = 'Table Grid'
@@ -84,13 +84,12 @@ table.style = 'Table Grid'
 for week, week_report in week_data.items():
     try:
       for day_index, daily_report in enumerate(week_report['data']['daily_report']):
+          the_date = datetime.strptime(daily_report["report_date"], "%Y-%m-%dT%H:%M:%SZ").date()          
           row_cells = table.add_row().cells
           row_data = [
-              f'{week}/{datetime.strptime(daily_report["report_date"], "%Y-%m-%dT%H:%M:%SZ").date()}',
+              f'Minggu ke-{week} / {WEEKDAYS[the_date.weekday()]} - {the_date}',
               daily_report['report'],
-              # None, #image
               '' if day_index<(len(week_report['data']['daily_report'])-1) else week_report['data']['learned_weekly'],
-              # None #image
           ]
 
           for i, cell in enumerate(row_data):
